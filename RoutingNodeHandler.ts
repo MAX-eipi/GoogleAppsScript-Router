@@ -1,66 +1,59 @@
-import { RoutingNodeImpl } from "./RoutingNodeImpl";
+import { Router } from "./Router";
 import { RoutingController, RoutingControllerWithType } from "./RoutingController";
+import { RoutingNode } from "./RoutingNode";
 
 export class RoutingNodeHandler {
-    protected readonly currentNode: RoutingNodeImpl;
+    protected readonly router: Router;
+    protected readonly node: RoutingNode;
 
-    public constructor(node: RoutingNodeImpl) {
-        this.currentNode = node;
+    public constructor(router: Router, node: RoutingNode) {
+        this.router = router;
+        this.node = node;
     }
 
-    public createNode(path: string, parameterTypeMapping?: Record<string, string>): RoutingNodeHandler {
-        const node = this.getOrCreateTargetNode(path, parameterTypeMapping);
-        return new RoutingNodeHandler(node);
+    public getOrCreateNode(path: string, name?: string | Function): RoutingNodeHandler {
+        return this.router.getOrCreateNode(path, name, this.node);
     }
 
-    protected getOrCreateTargetNode(path: string, parameterTypeMapping?: Record<string, string>): RoutingNodeImpl {
-        while (path.startsWith("/")) {
-            path = path.substr(1);
-        }
-        while (path.endsWith("/")) {
-            path = path.substr(0, path.length - 1);
-        }
-        if (!path) {
-            return this.currentNode;
-        }
-        const layers = path.split('/');
-        let current = this.currentNode;
-        for (const layer of layers) {
-            current = current.getOrCreateNode(layer, parameterTypeMapping);
-        }
-        return current;
+    public castOf<T extends Record<string, number | string>>(): RoutingNodeHandlerWithType<T> {
+        return new RoutingNodeHandlerWithType<T>(this.router, this.node);
+    }
+
+    public getFullPath(parameters: Record<string, number | string>): string {
+        return this.node.getFullPath(parameters);
     }
 
     public bindController(factory: () => RoutingController): void {
-        this.currentNode.bindController(factory);
+        this.node.bindController(factory);
     }
 
     public registerController(controller: RoutingController): void {
-        this.currentNode.registerContoller(controller);
+        this.node.registerController(controller);
     }
 }
 
-export class RoutingNodeHandlerWithType<T> extends RoutingNodeHandler {
-
-    public constructor(node: RoutingNodeImpl) {
-        super(node);
+export class RoutingNodeHandlerWithType<T extends Record<string, number | string>> extends RoutingNodeHandler {
+    public constructor(router: Router, node: RoutingNode) {
+        super(router, node);
     }
 
-    public createNode(path: string, parameterTypeMapping?: Record<string, string>): RoutingNodeHandlerWithType<T> {
-        const node = this.getOrCreateTargetNode(path, parameterTypeMapping);
-        return new RoutingNodeHandlerWithType<T>(node);
+    public getOrCreateNode(path: string, name?: string | Function): RoutingNodeHandlerWithType<T> {
+        return this.router.getOrCreateNodeWithType<T>(path, name, this.node);
     }
 
-    public createNodeWithType<U>(path: string, parameterTypeMapping?: { [P in keyof U]: string }): RoutingNodeHandlerWithType<T & U> {
-        const node = this.getOrCreateTargetNode(path, parameterTypeMapping);
-        return new RoutingNodeHandlerWithType<T & U>(node);
+    public getOrCreateNodeWithType<U>(path: string, name?: string | Function): RoutingNodeHandlerWithType<T & U> {
+        return this.router.getOrCreateNodeWithType<T & U>(path, name, this.node);
+    }
+
+    public getFullPath(parameters: T): string {
+        return this.node.getFullPath(parameters);
     }
 
     public bindController(factory: () => RoutingControllerWithType<T>): void {
-        this.currentNode.bindController(factory);
+        this.node.bindController(factory);
     }
 
     public registerController(controller: RoutingControllerWithType<T>): void {
-        this.currentNode.registerContoller(controller);
+        this.node.registerController(controller);
     }
 }

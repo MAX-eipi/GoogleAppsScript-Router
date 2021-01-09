@@ -2,100 +2,161 @@ import { RoutingController } from "./RoutingController";
 import { RoutingNode } from "./RoutingNode";
 import { RoutingParameterType } from "./RoutingParameterType";
 
+interface NodeInfo {
+    readonly pathFormat: string;
+    readonly key: string;
+    readonly parameterName: string;
+}
+
 export class RoutingNodeImpl implements RoutingNode {
-    public readonly parent: RoutingNodeImpl = null;
-    public readonly path: string;
-    public readonly parameterName: string;
+    private readonly _children: Record<string, RoutingNode> = {};
+    private readonly _nodeInfo: NodeInfo;
 
-    private readonly _children: Record<string, RoutingNodeImpl> = {};
+    private _parent: RoutingNode = null;
+    public get parent(): RoutingNode {
+        return this._parent;
+    }
 
-    public constructor(parent: RoutingNodeImpl, path: string, parameterTypeMapping?: Record<string, string>) {
-        this.parent = parent;
-        if (path.startsWith(":")) {
-            this.parameterName = path.substr(1);
-            this.path = `:${parameterTypeMapping[this.parameterName]}`;
+    public constructor(pathFormat: string) {
+        this._nodeInfo = this.createNodeInfo(pathFormat);
+    }
+
+    public setParent(parent: RoutingNode): void {
+        if (this._parent) {
+            this._parent.removeChild(this);
+            this._parent = null;
+        }
+        this._parent = parent;
+        this._parent.addChild(this);
+    }
+
+    public link(node: RoutingNode): void {
+        this.addChild(node);
+    }
+
+    public hasChild(pathFormat: string): boolean {
+        const key = this.createNodeInfo(pathFormat).key;
+        return key in this._children;
+    }
+
+    public getChild(pathFormat: string): RoutingNode {
+        const key = this.createNodeInfo(pathFormat).key;
+        return this._children[key];
+    }
+
+    public addChild(node: RoutingNode): void {
+        const nodeInfo = this.createNodeInfo(node.getPathFormat());
+        if (!(nodeInfo.key in this._children)) {
+            this._children[nodeInfo.key] = node;
         }
         else {
-            this.path = path;
+            throw new Error(`A node with the same key is already registered. self: ${this.getFullPathFormat()}, request: ${nodeInfo.pathFormat}`);
         }
     }
 
-
-    public get root(): RoutingNodeImpl {
-        return this.parent ? this.parent.root : this;
+    public removeChild(node: RoutingNode): void {
+        const nodeInfo = this.createNodeInfo(node.getPathFormat());
+        if (nodeInfo.key in this._children) {
+            delete this._children[nodeInfo.key];
+        }
     }
 
-
-    public get children(): Readonly<Record<string, RoutingNodeImpl>> {
-        return this._children;
+    private createNodeInfo(pathFormat: string): NodeInfo {
+        const ret = {
+            pathFormat: pathFormat,
+            key: null,
+            parameterName: null,
+        };
+        if (pathFormat.indexOf(":") !== -1) {
+            const x = pathFormat.split(":");
+            ret.parameterName = x[0];
+            ret.key = x[1];
+        }
+        else {
+            ret.key = pathFormat;
+        }
+        return ret;
     }
 
-
-    public getOrCreateNode(path: string, parameterTypeMapping?: Record<string, string>): RoutingNodeImpl {
-        if (!(path in this._children)) {
-            const child = new RoutingNodeImpl(this, path, parameterTypeMapping);
-            this._children[child.path] = child;
+    public getNode(path: string, parameters: Record<string, number | string>): RoutingNode {
+        while (path?.startsWith("/")) {
+            path = path.substr(1);
         }
-        if (path.startsWith(":")) {
-            path = `:${parameterTypeMapping[path.substr(1)]}`;
+        while (path?.endsWith("/")) {
+            path = path.substr(0, path.length - 1);
         }
-        return this._children[path];
-    }
-
-
-    public getNode(path: string, parameters: Record<string, string | number>): RoutingNodeImpl {
-        if (path in this._children) {
-            return this._children[path];
+        if (!path) {
+            return this;
         }
-        if (`:${RoutingParameterType.NUMBER}` in this._children) {
-            const num = parseInt(path);
+        const layers = path.split("/");
+        const nextLayer = layers[0];
+        if (nextLayer in this._children) {
+            return this._children[nextLayer].getNode(layers.slice(1).join("/"), parameters);
+        }
+        else if (RoutingParameterType.NUMBER in this._children) {
+            const num = parseInt(nextLayer);
             if (!isNaN(num)) {
-                const node = this._children[`:${RoutingParameterType.NUMBER}`];
-                parameters[node.parameterName] = num;
-                return node;
+                const node = this._children[RoutingParameterType.NUMBER];
+                const nodeInfo = this.createNodeInfo(node.getPathFormat());
+                parameters[nodeInfo.parameterName] = num;
+                return node.getNode(layers.slice(1).join("/"), parameters);
             }
         }
-        if (`:${RoutingParameterType.TEXT}` in this._children) {
-            const node = this._children[`:${RoutingParameterType.TEXT}`];
-            parameters[node.parameterName] = path;
-            return node;
+        else if (RoutingParameterType.TEXT in this._children) {
+            const node = this._children[RoutingParameterType.TEXT];
+            const nodeInfo = this.createNodeInfo(node.getPathFormat());
+            parameters[nodeInfo.parameterName] = nextLayer;
+            return node.getNode(layers.slice(1).join("/"), parameters);
         }
         return null;
     }
 
+    public getPathFormat(): string {
+        return this._nodeInfo.pathFormat;
+    }
 
-    private _controllerFactory: () => RoutingController;
-    private _controller: RoutingController;
+    public getPath(parameters: Record<string, number | string>): string {
+        if (this._nodeInfo.parameterName) {
+            return parameters[this._nodeInfo.parameterName].toString();
+        }
+        return this._nodeInfo.key;
+    }
 
+    public getFullPathFormat(): string {
+        if (this.parent) {
+            return this.parent.getFullPathFormat() + "/" + this.getPathFormat();
+        }
+        else {
+            const pathFormat = this.getPathFormat();
+            return pathFormat ? "/" + pathFormat : "";
+        }
+    }
+
+    public getFullPath(parameters: Record<string, number | string>): string {
+        if (this.parent) {
+            return this.parent.getFullPath(parameters) + "/" + this.getPath(parameters);
+        }
+        else {
+            const path = this.getPath(parameters);
+            return path ? "/" + path : "";
+        }
+    }
+
+    private _controllerFactory: () => RoutingController = null;
+    private _controller: RoutingController = null;
 
     public bindController(factory: () => RoutingController): void {
         this._controllerFactory = factory;
     }
 
-
-    public registerContoller(controller: RoutingController): void {
+    public registerController(controller: RoutingController): void {
         this._controller = controller;
     }
 
-
     public getController(): RoutingController {
-        if (!this._controller) {
+        if (!this._controller && this._controllerFactory) {
             this._controller = this._controllerFactory();
         }
         return this._controller;
-    }
-
-    public createFullPath(parameters: any): string {
-        let fullPath = "/" + this.getValue(parameters);
-        let current = this.parent;
-        while (current?.parent) {
-            fullPath = "/" + current.getValue(parameters) + fullPath;
-            current = current.parent;
-        }
-        return fullPath;
-    }
-
-    private getValue(parameters: any): string {
-        return this.parameterName ? parameters[this.parameterName].toString() : this.path;
     }
 } 
