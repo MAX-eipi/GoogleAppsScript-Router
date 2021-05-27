@@ -1,23 +1,28 @@
 import { RoutingController } from "./RoutingController";
+import { RoutingPath } from "./RoutingPath";
 
-export interface RoutingNode {
-    readonly parent: RoutingNode;
+export class RoutingNode {
+    public readonly routingPath: RoutingPath;
 
-    setParent(parent: RoutingNode): void;
-    link(node: RoutingNode): void;
+    private _controllerFactory: () => RoutingController = null;
+    private _controller: RoutingController = null;
 
-    hasChild(pathFormat: string): boolean;
-    getChild(pathFormat: string): RoutingNode;
-    addChild(node: RoutingNode): void;
-    removeChild(node: RoutingNode): void;
+    public constructor(routingPath: RoutingPath) {
+        this.routingPath = routingPath;
+    }
 
-    getNode(path: string, parameters: Record<string, number | string>): RoutingNode;
-    getPathFormat(): string;
-    getPath(parameters: Record<string, number | string>): string;
-    getFullPathFormat(): string;
-    getFullPath(parameters: Record<string, number | string>);
+    public bindController(factory: () => RoutingController): void {
+        this._controllerFactory = factory;
+    }
 
-    bindController(factory: () => RoutingController): void;
-    registerController(controller: RoutingController): void;
-    getController(): RoutingController;
+    public registerController(controller: RoutingController): void {
+        this._controller = controller;
+    }
+
+    public getController(): RoutingController {
+        if (!this._controller && this._controllerFactory) {
+            this._controller = this._controllerFactory();
+        }
+        return this._controller;
+    }
 }
