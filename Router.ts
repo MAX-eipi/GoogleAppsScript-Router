@@ -14,7 +14,7 @@ export class Router {
         this._parameterSelector = (x !== null) ? x : x => x;
     }
 
-    public call(path: string): boolean {
+    public call(path: string) {
         const node = this._tree.resolveNode(path);
         if (!node) {
             return false;
@@ -28,7 +28,6 @@ export class Router {
         let param = node.routingPath.resolveParameter(path);
         param = this._parameterSelector(param);
         param = node.parameterSelector(param);
-        controller.call(param, node);
-        return true;
+        return controller.call(param, node);
     }
 }
