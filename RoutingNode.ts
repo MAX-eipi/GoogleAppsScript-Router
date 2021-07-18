@@ -7,6 +7,16 @@ export class RoutingNode {
     private _controllerFactory: () => RoutingController = null;
     private _controller: RoutingController = null;
 
+    private _parameterSelector: (x) => any = x => x;
+
+    public get parameterSelector(): (x) => any {
+        return this._parameterSelector;
+    }
+
+    public set parameterSelector(x: (x) => any) {
+        this._parameterSelector = (x !== null) ? x : x => x;
+    }
+
     public constructor(routingPath: RoutingPath) {
         this.routingPath = routingPath;
     }
