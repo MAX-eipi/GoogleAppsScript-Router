@@ -38,10 +38,13 @@ class RoutingBindingInfo {
     }
 
     public getChildByValue(value: string): RoutingBindingInfo {
-        const type = !isNaN(parseInt(value))
-            ? RoutingParameterType.NUMBER
-            : RoutingParameterType.TEXT;
-        return this.getChild(value, type);
+        if (!isNaN(parseInt(value))) {
+            const child = this.getChild(value, RoutingParameterType.NUMBER);
+            if (child !== null) {
+                return child;
+            }
+        }
+        return this.getChild(value, RoutingParameterType.TEXT);
     }
 
     private getChild(key: string, type: string): RoutingBindingInfo {

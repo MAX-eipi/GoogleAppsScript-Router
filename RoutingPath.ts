@@ -50,7 +50,7 @@ export class RoutingPath {
                 path += `/${parameter[edge.name]}`;
             }
             else {
-                path += edge.name;
+                path += `/${edge.name}`;
             }
         }
         return path;
