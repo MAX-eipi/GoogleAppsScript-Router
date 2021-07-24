@@ -17,12 +17,12 @@ export class Router {
     public call(path: string) {
         const node = this._tree.resolveNode(path);
         if (!node) {
-            return false;
+            return null;
         }
 
         const controller = node.getController();
         if (!controller) {
-            return false;
+            return null;
         }
 
         let param = node.routingPath.resolveParameter(path);
