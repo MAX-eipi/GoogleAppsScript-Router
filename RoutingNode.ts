@@ -7,13 +7,13 @@ export class RoutingNode {
     private _controllerFactory: () => RoutingController = null;
     private _controller: RoutingController = null;
 
-    private _parameterSelector: (x) => any = x => x;
+    private _parameterSelector: (x) => unknown = x => x;
 
-    public get parameterSelector(): (x) => any {
+    public get parameterSelector(): (x) => unknown {
         return this._parameterSelector;
     }
 
-    public set parameterSelector(x: (x) => any) {
+    public set parameterSelector(x: (x) => unknown) {
         this._parameterSelector = (x !== null) ? x : x => x;
     }
 

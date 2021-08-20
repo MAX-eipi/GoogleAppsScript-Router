@@ -14,7 +14,7 @@ export class RoutingPath {
         return RoutingPath.isRootPath(this.pathFormat) || this.edges.length === 0;
     }
 
-    public resolveParameter(path: string): any {
+    public resolveParameter(path: string) {
         if (this.isRoot()) {
             return {};
         }
@@ -39,7 +39,7 @@ export class RoutingPath {
         return parameter;
     }
 
-    public resolvePath(parameter: any): string {
+    public resolvePath(parameter): string {
         if (this.isRoot()) {
             return "/";
         }

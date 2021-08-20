@@ -8,9 +8,9 @@ export class Router {
         return new RoutingTreeEditor(this._tree, this._tree.getOrCreateNodeByPathFormat("/"));
     }
 
-    private _parameterSelector: (x) => any = x => x;
+    private _parameterSelector: (x) => unknown = x => x;
 
-    public set parameterSelector(x: (x) => any) {
+    public set parameterSelector(x: (x) => unknown) {
         this._parameterSelector = (x !== null) ? x : x => x;
     }
 
