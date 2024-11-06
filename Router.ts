@@ -1,7 +1,4 @@
-import { RoutingTree } from "./RoutingTree";
-import { RoutingTreeEditor } from "./RoutingTreeEditor";
-
-export class Router {
+class Router {
     private readonly _tree: RoutingTree = new RoutingTree();
 
     public getTreeEditor(): RoutingTreeEditor {

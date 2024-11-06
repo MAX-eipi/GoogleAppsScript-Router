@@ -1,8 +1,4 @@
-import { RoutingNode } from "./RoutingNode";
-import { RoutingTree } from "./RoutingTree";
-import { RoutingPath } from "./RoutingPath";
-
-export class RoutingTreeEditor {
+class RoutingTreeEditor {
     private readonly _tree: RoutingTree;
     public readonly node: RoutingNode;
 

@@ -1,5 +1,3 @@
-import { RoutingNode } from "./RoutingNode";
-
-export interface RoutingController {
+interface RoutingController {
     call(parameter, node: RoutingNode);
 }

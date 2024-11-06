@@ -1,7 +1,4 @@
-import { RoutingController } from "./RoutingController";
-import { RoutingPath } from "./RoutingPath";
-
-export class RoutingNode {
+class RoutingNode {
     public readonly routingPath: RoutingPath;
 
     private _controllerFactory: () => RoutingController = null;

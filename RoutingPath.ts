@@ -1,7 +1,4 @@
-import { RoutingEdge, RoutingEdgeUtility } from "./RoutingEdge";
-import { RoutingParameterType } from "./RoutingParameterType";
-
-export class RoutingPath {
+class RoutingPath {
     public readonly pathFormat: string;
     public readonly edges: RoutingEdge[];
 
